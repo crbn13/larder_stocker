@@ -1,0 +1,10 @@
+{
+    "application_name": "bob",
+    "client_ip": "127.0.0.1",
+    "screen_height": 1080,
+    "screen_width": 1920,
+    "server_ip": "",
+    "server_path_to_data": "data/",
+    "shopping_list_recency_bias": 2,
+    "shopping_list_time_buffer": 432000
+}

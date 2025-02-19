@@ -1,0 +1,12 @@
+add config.json file integration with crbn::estimateBoundsCheck()
+add elements checker to json.init()
+add file mutex for json class <<< WIP
+
+
+change crbn::jobs::instructionDecoder data request behaveour to use new tags.json
+
+install nlohmannjson on home pc 
+
+if server fails to generate data, then return bodysize 0, this will be used to tell client that it failed, if the client is expecting data
+
+../lib/headers/crbn_jobManager.hpp:324:34 change .contains to something else to not use cpp 20
