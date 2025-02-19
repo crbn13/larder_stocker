@@ -3,6 +3,8 @@ This project is EXTREMELY unfinished, but i hope it shows how my coding ability 
 Due to restructuring and improvements to the way that this project has been strucutred, most of the code within the client/ and server/ source code directories is all depreciated. All of my up to date code is stored in lib/  the files that i have coded are all prefixed with "crbn_". (apart from crbn_imageDownload which was mostly created via generative ai)
 
 
+I have created this project entirely in an offline git repository, but at the moment i canont upload the git repository due to private api keys being exposed to the internet in almost all of the more recent commits, which is why i have this copy paste repo.
+
 A lot of the code is coded in quite a dangerous way with incorrect use of raw pointers but i have since learned about ways to mitigate these dangers. I plan on fixing and updating all of these dangers with the use of smart pointers and other scoped methods of managing data
 
 
