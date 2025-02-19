@@ -2,6 +2,11 @@
 #ifndef CRBN_IMAGE_DOWNLOADER
 #define CRBN_IMAGE_DOWNLOADER
 
+
+// THIS FILE IS AI GENERATED
+// but a lot of my own code has also been implemented
+
+
 #include "apikeys.hpp" // store api keys as global strings
 
 #include <iostream>

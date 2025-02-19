@@ -1,5 +1,11 @@
 #include "headers/crbn_imageDownloader.hpp"
 
+// THIS FILE IS AI GENERATED
+// but a lot of my own code has also been implemented
+
+
+
+
 // Write callback for libcurl
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::string *userData)
 {
