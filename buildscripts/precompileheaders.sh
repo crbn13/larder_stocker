@@ -5,7 +5,7 @@
 echo '
         |$
 Usage : |$ bash precompileheaders.sh "y/n remove files without prompt" "optional compiler args" 
-        |$
+        |$                           -nd does not delete files which already exist
 '
 
 echo " Removing prexisting object files " 
@@ -32,7 +32,11 @@ out_asio="../objects/client/asio.o"
 cp_asio="../objects/server/asio.o"
 
 in_json="../lib/nlohmannjson.cpp"
-out_json="../lib/nlohmann/json.hpp.gch"
+out_json="../objects/client/nlohmannjson.o"
+cp_json="../objects/server/nlohmannjson.o"
+
+in_precompjson="../lib/nlohmann/json.hpp"
+out_precompjson="../lib/nlohmann/json.hpp.gch"
 # out_json="../objects/client/json.o"
 # cp_json="../objects/server/json.o"
 
@@ -42,33 +46,35 @@ out_stb="../objects/server/stb_image.o"
 echo " Removing old files "
 
 #array of variables with names beginning with out
-declare -a arr=${!out*}
 # echo $arr
 # delete all prexisting files
 
-for i in ${arr[@]}
-do
-    # echo "i = $i"
-    #delete optional files if they exist
-    string="cp_"${i:4}
-    # echo ${!string} ## outputs the value of the variable with its name stored in string
-    
-    file=${!string}
-    if [ ! -v ${!string} ]; then 
-        # echo "${!string} is set";
-        if [[ -a ${file} ]] ; then
-            rm $rmargs -v "${!string}"
-        else 
-            echo "${!string} not found"
+if [[ "$1" != "-nd" ]] ; then ## -nd command line arg to not delete files
+    declare -a arr=${!out*}
+    for i in ${arr[@]}
+    do
+        # echo "i = $i"
+        #delete optional files if they exist
+        string="cp_"${i:4} 
+        echo "$string = ${!string}" ## outputs the value of the variable with its name stored in string
+
+        file=${!string}
+        if [ ! -v ${!string} ]; then 
+            # echo "${!string} is set";
+            if [[ -a ${file} ]] ; then
+                rm $rmargs -v "${!string}"
+            else 
+                echo "${!string} not found"
+            fi
         fi
-    fi
-    #delete normal files
-    if [[ -a ${!i} ]] ; then
-        rm $rmargs -v "${!i}"
-    else
-        echo "${!i} not found "
-    fi
-done
+        #delete normal files
+        if [[ -a ${!i} ]] ; then
+            rm $rmargs -v "${!i}"
+        else
+            echo "${!i} not found "
+        fi
+    done
+fi
 
 echo "";
 
@@ -142,17 +148,31 @@ echo "";
 #) &
 
 (
-    if [[ -a "$out_json" ]] ; then 
-        echo "Already Compiled $in_json to $out_json"
+    if [[ -a "$out_json" ]] && [[ -a "$cp_json" ]] ; then 
+        echo "Already Compiled $in_json to $out_json and $cp_json"
     else 
         g++ -c $in_json                                     \
             -o  $out_json                                   \
-            -O3 -Ofast -Os -s                               \
-            -I ../lib/                                      \
-            -march=native        $args                      \
-            -std=c++17                                                         
+            $args                                           \
+            -std=c++17                                                     
         if [ $? -eq 0 ] ; then 
-            echo -e " Compiled  | $in_json |\n\tTo | $out_json |"
+            cp "$out_json" "$cp_json"
+            echo -e " Compiled  | $in_json |\n\tTo | $out_json and $cp_json | "
+        fi
+    fi
+) &
+
+(
+    if [[ -a "$out_precompjson" ]] ; then 
+        echo "Already Compiled $in_precompjson to $out_precompjson"
+    else 
+        g++ -c $in_precompjson                                      \
+            -o  $out_precompjson                                    \
+            $args                                                   \
+            -std=c++17                                              \
+            -I ../lib/
+        if [ $? -eq 0 ] ; then 
+            echo -e " Compiled  | $in_precompjson |\n\tTo | $out_precompjson |"
         fi
     fi
 ) &

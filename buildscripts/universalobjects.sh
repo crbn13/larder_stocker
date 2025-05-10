@@ -3,21 +3,52 @@
 echo '
         |$
 Usage : |$ bash precompileheaders.sh "y/n remove files without prompt" "optional compiler args" 
-        |$
+        |$                            -nd = no deletion, just compiles files which dont exist
+                                      -gc = git changes , removes and compiles files which have changed
 '
 
-echo " Removing prexisting object files " 
 
 if [[ "$1" == "y" ]] ; then
+    echo " Removing prexisting object files " 
     rm -v ../objects/*/crbn*.o ../objects/crbn*.o 
+elif [[ "$1" == "-nd" ]] ; then
+    echo '
+    File deletion turned off
+    '
+elif [[ "$1" == "-gc" ]] ; then
+    echo ' 
+    removing Git changes 
+    '
+    (git add ../)
+    declare -a arr=$(git diff --cached --name-only)
+    # echo $arr
+    for i in ${arr[@]}   ; do
+        if [ "${i#*.}" == "cpp" ] || [ "${i#*.}" == "hpp" ] ; then
+        
+            num=$(echo $i | grep -o "/" | wc -l) # num = number of instances of character '/' in the string
+            for ((x = 0 ; x < $num ; x++ )) ; do 
+                i=${i#*/} # remove characters from the left untill it gets to a '/' | dir/mycode.cpp -> mycode.cpp
+            done
+        
+            # echo $i
+            #                      ${i%.*} removes characters from the right till it gets to a '.' | hi.txt -> hi
+            (rm -v ../objects/*/${i%.*}.o )
+        else 
+            echo " File : $i isnt of type cpp or hpp "
+        fi
+    done
 else
+    echo " Removing prexisting object files " 
     rm -i -v ../objects/*/crbn*.o ../objects/crbn*.o 
 fi
 
-args=''
-setarg=" -D ASIO_SEPARATE_COMPILATION -Wall "
-if [[ -n "$2" ]] ; then
-    args=$setarg$2
+setarg=" -D ASIO_SEPARATE_COMPILATION -Wall -Wno-unknown-pragmas "
+
+args=$setarg
+
+
+if [[ -n "$2" ]] ; then # if string not empty
+    args=$args" "$2 ##string concatenation
     echo "g++ arguments provided | $args |"
 fi
 
@@ -41,6 +72,10 @@ in_jobmc="../lib/crbn_jobManager.cpp"
 out_jobmc="../objects/client/crbn_jobManager.o"
 in_jobms="../lib/crbn_jobManager.cpp"
 out_jobms="../objects/server/crbn_jobManager.o"
+in_inss="../lib/crbn_instructions.cpp"
+out_inss="../objects/server/crbn_instructions.o"
+in_insc="../lib/crbn_instructions.cpp"
+out_insc="../objects/client/crbn_instructions.o"
 in_log="../lib/crbn_logging.cpp"
 out_log="../objects/client/crbn_logging.o"
 cp_log="../objects/server/crbn_logging.o"
@@ -184,6 +219,38 @@ out_cli="../objects/client/crbn_client.o"
 ) &
 
 (
+    if [[ -a "$out_inss" ]] ; then 
+        echo "Already Compiled $in_inss to $out_inss"
+    else 
+        g++ -c $in_inss        \
+            -o  $out_inss  \
+            $args \
+            -I ../lib/asio-1.30.2/include/ \
+            -O3 -Ofast -Os -s           \
+            -march=native \
+            -std=c++17 \
+            -D DEF_SERVER
+        if [ $? -eq 0 ] ; then echo " Compiled | $in_inss | to $out_inss" ; fi
+    fi
+) &
+
+(
+    if [[ -a "$out_insc" ]] ; then 
+        echo "Already Compiled $in_insc to $out_insc"
+    else 
+        g++ -c $in_insc        \
+            -o  $out_insc  \
+            $args \
+            -I ../lib/asio-1.30.2/include/ \
+            -O3 -Ofast -Os -s           \
+            -march=native \
+            -std=c++17 \
+            -D DEF_CLIENT
+        if [ $? -eq 0 ] ; then echo " Compiled | $in_insc | to $out_insc" ; fi
+    fi
+) &
+
+(
     if [[ -a "$out_log" ]] && [[ -a "$cp_log" ]] ; then 
         echo "Already Compiled $in_log to $out_log and $cp_log"
     else 
@@ -268,11 +335,11 @@ out_cli="../objects/client/crbn_client.o"
         echo "Already Compiled $in_cli to $out_cli"
     else 
         g++ -c $in_cli                \
-            -o  $out_cli  \
-            $args \
+            -o  $out_cli         \
+            $args                \
             -O3 -Ofast -Os -s                               \
             -march=native                                   \
-            -std=c++20                                      \
+            -std=c++17                                      \
             -D DEF_CLIENT \
             -I ../lib/asio-1.30.2/include
         if [ $? -eq 0 ] ; then echo " Compiled | $in_cli | to $out_cli" ; fi

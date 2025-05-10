@@ -6,10 +6,8 @@ if [[ -n "$1" ]] ; then
     echo "g++ arguments provided | $1 |"
 fi
 
-(bash precompileheaders.sh "y" "$args") &
-(bash universalobjects.sh y "$args") &
+(bash universalobjects.sh "-gc" "$args") 
 
-wait
 
 (bash client.sh "$args") &
 (bash server.sh "$args") &
