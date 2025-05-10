@@ -2,6 +2,10 @@
 
 namespace crbn
 {
+    namespace
+    {
+
+    }
 }
 
 // there are no logging fns lmao

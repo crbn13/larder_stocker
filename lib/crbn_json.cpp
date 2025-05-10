@@ -1,4 +1,8 @@
 #include "headers/crbn_json.hpp"
+#include "headers/crbn_logging.hpp"
+#include <cstddef>
+#include <iterator>
+#include <string>
 
 namespace crbn
 {
@@ -94,7 +98,6 @@ namespace crbn
             }
         }
 
-        /// @brief updates local data using mutex
         void Json_Helper::init()
         {
             init(fileName, JSON_RAW);
@@ -143,7 +146,6 @@ namespace crbn
                 JsonMutex::unlock();
         }
 
-        /// @brief WARNING : NO MUTEX | updates locally stored file to file in memory
         void Json_Helper::update()
         {
             if (isLocked())
@@ -188,7 +190,7 @@ namespace crbn
             }
             else
             {
-                crbn::log("crbn::jsn::Json_Helper::strGet | WARNING : reading cached data, could be out of date");
+                crbn::warn("crbn::jsn::Json_Helper::strGet | WARNING : reading cached data, could be out of date");
                 try
                 {
                     return m_j[key].get<std::string>();
@@ -309,25 +311,56 @@ namespace crbn
             std::ifstream file_input(path_fileName);
 
             json m_j;
+            bool create_own = false;
 
             if (file_input.is_open())
             {
-                crbn::log("crbn::jsn::jsonRead() about to parse file");
-                file_input >> m_j;
-                file_input.close();
-                return m_j;
+                file_input.seekg(0, std::ios::end);
+                size_t size = file_input.tellg();
+
+                if (size > 1) // if filesize is not 0
+                {
+                    crbn::log(
+                        "jsonRead() : path = " + path_fileName
+                        + " | size = " + std::to_string(size));
+                    std::string jsonRaw(size, '\0');
+                    file_input.seekg(0);
+                    file_input.read(&jsonRaw[0], size);
+
+                    if (json::accept(jsonRaw)) // if the data is valid json
+                    {
+                        file_input.seekg(0);
+                        crbn::log("crbn::jsn::jsonRead() about to parse file");
+                        file_input >> m_j;
+                        file_input.close();
+                        return m_j;
+                    }
+                    else
+                    {
+                        crbn::warn("not valid json inputted");
+                        create_own = true;
+                    }
+                }
+                else
+                {
+                    crbn::log("jsonRead() File is empty, self generating");
+                    create_own = true;
+                }
             }
             else
             {
-                crbn::log("crbn::jsn::jsonRead() could not open file \n\tassuming does not exist\n\tgenerating file");
+                crbn::log("jsonRead() File does not exist");
+                create_own = true;
+            }
+
+            if (create_own)
+            {
+                crbn::log(
+                    "crbn::jsn::jsonRead() could not open file \n\tassuming does not "
+                    "exist\n\tgenerating file");
 
                 m_j = json::parse(RAW);
                 jsonWrite(path_fileName, m_j);
-            }
-
-            if (file_input.is_open())
-            {
-                file_input.close();
             }
 
             return m_j;

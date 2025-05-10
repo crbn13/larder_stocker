@@ -7,7 +7,14 @@
 // but a lot of my own code has also been implemented
 
 
-#include "apikeys.hpp" // store api keys as global strings
+#include "apikeys.hpp" // store api keys as global string
+// apikeys.hpp contents : 
+/*
+#include <string>
+
+std::string apiKey = "e";
+std::string searchEngineId = "e";
+*/
 
 #include <iostream>
 #include <fstream>

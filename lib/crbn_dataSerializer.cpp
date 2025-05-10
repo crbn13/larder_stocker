@@ -1,9 +1,26 @@
 #include "headers/crbn_dataSerialiser.hpp"
+#include <stdexcept>
 
 namespace crbn
 {
+    serialiser::serialiser() {}
 
-    serialiser::serialiser(uint8_t *rawInput, bool readBody)
+    serialiser::~serialiser() {}
+
+    serialiser::serialiser(const serialiser & other)
+        : body   {other.body},
+          header {other.header}
+    {
+        // needs testing
+    }
+
+    serialiser::serialiser(serialiser &&other)
+        : body   { std::move(other.body  )},
+          header { std::move(other.header)}
+    {
+    }
+
+    serialiser::serialiser(uint8_t* rawInput, bool readBody)
     {
         rawHeaderIn(rawInput, readBody);
     }
@@ -11,7 +28,11 @@ namespace crbn
     void serialiser::rawHeaderIn(uint8_t *rawInput, bool readBody)
     {
         crbn::log(" dataSerialiser : rawHeaderIn called");
-
+        
+        if (rawInput == nullptr)
+        {
+            throw std::length_error( "rawHeaderIn() Unexpected nullptr inputted ");
+        }
         uint8_t *headerArr = new uint8_t[serc::HEADER_SIZE_T]{0};
 
         for (auto i = 0; i < serc::HEADER_SIZE_T; i++)
@@ -45,10 +66,6 @@ namespace crbn
         }
     }
 
-    serialiser::serialiser()
-    {
-    }
-
     serialiser::serialiser(uint16_t op, uint32_t ticket)
     {
         uint8_t *body = nullptr;
@@ -59,17 +76,19 @@ namespace crbn
     {
         initialise(bodyInp, size, 0, 0);
     }
-    serialiser::serialiser(uint8_t *bodyInp, size_t size, uint16_t op)
+    serialiser::serialiser(uint8_t *bodyInp, size_t size, serc::OPERATION_TYPE op)
     {
         initialise(bodyInp, size, op, 0);
     }
-    serialiser::serialiser(uint8_t *bodyInp, size_t size, uint16_t operation, uint32_t ticket)
+    serialiser::serialiser(uint8_t *bodyInp, size_t size, serc::OPERATION_TYPE operation, serc::TICKET_TYPE ticket)
     {
         initialise(bodyInp, size, operation, ticket);
     }
 
-    void serialiser::initialise(uint8_t *bodyInp, size_t size, uint16_t operation, uint32_t ticket)
+    void serialiser::initialise(uint8_t *bodyInp, size_t size, serc::OPERATION_TYPE operation, serc::TICKET_TYPE ticket)
     {
+        if ((size != 0) && (bodyInp == nullptr))
+            throw std::length_error("initialise() unexpected nullptr");
         header.bodysize = size;
         header.operation = operation;
         header.ticket = ticket;
@@ -122,7 +141,7 @@ namespace crbn
     }
     /// @brief
     /// @return returns pointer to uint8_t array
-    uint8_t * serialiser::rawDatOut()
+    uint8_t *serialiser::rawDatOut()
     {
         crbn::log(" dataSerialiser : rawDatOut called");
         uint8_t *dat = new uint8_t[HEADER_SIZE_T + header.bodysize]{0};
@@ -144,7 +163,6 @@ namespace crbn
             temp = temp >> 8;
             // std::cout << (+(uint8_t)header.bodysize >> i) << " ";
         }
-
 
         crbn::log(" rawDatOut : ticket = " + std::to_string(+header.ticket));
 
@@ -171,7 +189,7 @@ namespace crbn
     {
         return +(header.bodysize + serc::HEADER_SIZE_T);
     }
-    
+
     /// @brief returns size of body
     /// @return
     size_t serialiser::bodySize()
@@ -187,18 +205,18 @@ namespace crbn
     {
         return +body.rawData[element];
     }
-    uint16_t serialiser::operation()
+    serc::OPERATION_TYPE serialiser::operation()
     {
         return +header.operation;
     }
-    uint32_t serialiser::ticket()
+    serc::TICKET_TYPE serialiser::ticket()
     {
         return +header.ticket;
     }
 
     /// @brief returns pointer to c style array of the body
     /// @return
-    uint8_t * serialiser::c_bodyStr()
+    uint8_t *serialiser::c_bodyStr()
     {
         uint8_t *array = new uint8_t[bodySize() + 4]{0};
 
@@ -212,6 +230,7 @@ namespace crbn
     std::string serialiser::bodyAsString()
     {
         std::string str;
+        str.reserve(bodySize());
         for (size_t i = 0; i < bodySize(); i++)
         {
             str.push_back((char)bodyAccsess(i));

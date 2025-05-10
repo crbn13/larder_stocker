@@ -4,7 +4,7 @@ namespace crbn
 {
     namespace err
     {
-
+        
     }
 }
 

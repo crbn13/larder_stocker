@@ -1,11 +1,6 @@
+#ifndef CRBN_GUI_HPP
+#define CRBN_GUI_HPP
 
-#ifndef CRBN_GUI
-#define CRBN_GUI
-
-// #include "client.hpp"
-
-// #include "pgePLUSqgui.hpp"
-// #define OLC_PGE_APPLICATION
 #include "../olcPixelGameEngine.h"
 #include "../olcPGEX_QuickGUI.h"
 
@@ -16,7 +11,7 @@
 #include "crbn_json.hpp"
 
 
-std::string glob_ip;
+inline std::string glob_ip;
 
 class Gui : public olc::PixelGameEngine
 {
@@ -24,10 +19,11 @@ public:
     
     Gui();
 
-    crbn::Jobs job;
+    std::shared_ptr<crbn::Client_Jobs> job;
 
-    crbn::scr::Screens_ExtraClass<crbn::scr::MainMenu, crbn::Jobs> mainMenu;
-    crbn::scr::Screens_ExtraClass<crbn::scr::ScannInput, crbn::Jobs> scannInput;
+    crbn::scr::Screens_ExtraClass<crbn::scr::MainMenu, crbn::Client_Jobs*> mainMenu;
+    crbn::scr::Screens_ExtraClass<crbn::scr::ScannInput, std::shared_ptr<crbn::Client_Jobs>> scannInput;
+    crbn::scr::Screens_ExtraClass<crbn::scr::ShoppingList, std::shared_ptr<crbn::Client_Jobs>> shoppingList;
 
     void delScreens();
 
@@ -47,7 +43,7 @@ namespace crbn
     void guiStart();
 }
 
-int main();
+// int main();
 
 #endif
 

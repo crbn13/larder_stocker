@@ -27,6 +27,20 @@ namespace crbn
             inline const std::string server_path_to_data = "server_path_to_data";
             inline const std::string client_ip = "client_ip";
             inline const std::string server_ip = "server_ip";
+            inline const std::string tag_id = "tag_id";
+            inline const std::string name = "name";
+            inline const std::string number_of = "number_of"; 
+            inline const std::string consumption_times = "consumption_times";
+            inline const std::string input_times = "input_times";
+            inline const std::string rebuy = "rebuy";
+            inline const std::string container = "container";
+            inline const std::string shopping_list_time_buffer = "shopping_list_time_buffer";
+            inline const std::string shopping_list_recency_bias = "shopping_list_recency_bias";
+            inline const std::string tags = "tags";
+            inline const std::string running_low = "running_low";
+            inline const std::string predicted = "predicted";
+            inline const std::string known_have_none = "known_have_none";
+
         }
 
         namespace jsonLiterals
@@ -49,14 +63,21 @@ namespace crbn
                 "name": "",
                 "number_of": 0,
                 "consumption_times": [],
-                "last_input_date": "",
-                "rebuy": false,
+                "input_times": [],
+                "rebuy": true,
                 "container": {}
             }
             )";
             inline const char *tagsStore = R"(
             {
-                "tags": []
+                "tags": {}
+            }
+            )";
+            inline const char *shopping_list = R"(
+            {
+                "running_low": [],
+                "predicted" : [],
+                "known_have_none" : []
             }
             )";
 
@@ -122,11 +143,16 @@ namespace crbn
             json m_j;
             std::string fileName;
             const char *JSON_RAW = crbn::jsn::jsonLiterals::config;
-            
+
             void setvals();
+
         public:
             /// @brief by deault this class will read from config file
             Json_Helper();
+            /// @brief calls init() function
+            /// @param fileToRead
+            /// @param JSON_RAW_SET
+            Json_Helper(const std::string &fileToRead, const char *JSON_RAW_SET);
 
             /// @brief verry dangerous, sets the safemode to unsafe for the duration of the life of the returned smart pointer
             /// @param
@@ -142,12 +168,8 @@ namespace crbn
             /// @brief saves json file to memory then unlocks mutex
             void unlock();
 
-
-
-            /// @brief calls init() function
-            /// @param fileToRead
-            /// @param JSON_RAW_SET
-            Json_Helper(const std::string &fileToRead, const char *JSON_RAW_SET);
+            /// @brief updates local data using mutex
+            void init();
 
             /// @brief loads config data into json file
             void init(const std::string &fileToRead, const char *JSON_RAW_SET);
@@ -157,27 +179,22 @@ namespace crbn
             template <typename T>
             json &operator[](T &tag);
 
-        public:
-            /// @brief depreciated, use update()
-            void init();
-
-            /// @brief updates locally stored file to file in memory
+            /// @brief reads file from memory and updates locally stored data
+            /// WILL THROW ERROR IF MUTEX IS NOT LOCKED
             void update();
 
-            /// @brief changes value then saves the json
+            /// @brief changes value but does NOT save to memory
             /// @tparam T
             /// @param key
             /// @param value
             template <typename T>
-            void json_write(const std::string key, const T &value);
+            void json_write(const std::string &key, const T &value);
 
-        public:
             /// @brief writes locally stored json file to memory
             /// be careful using this function as it is not parrelel data safe
             void save();
 
-        public:
-            /// @brief dont use
+            /// @brief get a specific tag as a string
             /// @param key
             /// @return
             std::string strGet(const std::string &key);
@@ -193,9 +210,10 @@ namespace crbn
 
         class Safemode : public Json_Helper
         {
-            private:
-            bool * sm;
-            bool * lkd;
+        private:
+            bool *sm;
+            bool *lkd;
+
         public:
             Safemode(bool *, bool *);
             ~Safemode();

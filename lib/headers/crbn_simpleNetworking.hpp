@@ -1,19 +1,21 @@
 // #pragma once
-#ifndef SIMPLE_NETWORKING
-#define SIMPLE_NETWORKING
+#ifndef SIMPLE_NETWORKING_HPP
+#define SIMPLE_NETWORKING_HPP
 
 // #include <asio.hpp>
 // #include <asio/ts/buffer.hpp>
 // #include <asio/ts/internet.hpp>
 
+// #include "../asio-1.30.2/include/asio.hpp"
+// #include "../asio-1.30.2/include/asio/ts/buffer.hpp"
+// #include "../asio-1.30.2/include/asio/ts/internet.hpp"
 #include "../asio-1.30.2/include/asio.hpp"
-#include "../asio-1.30.2/include/asio/ts/buffer.hpp"
-#include "../asio-1.30.2/include/asio/ts/internet.hpp"
 
 // #include "crbn_logging.hpp"
+#include "crbn_operations.hpp"
 #include "crbn_errorCodes.hpp"
 #include "crbn_dataSerialiser.hpp"
-#include "crbn_instructions.hpp"
+// #include "crbn_instructions.hpp"
 #include "crbn_json.hpp"
 
 #include <stdio.h>

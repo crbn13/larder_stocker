@@ -24,12 +24,12 @@ namespace crbn
         {
         private:
             ScreenClass *scr;
-            ExtraClass *ext;
+            ExtraClass   ext;
             olc::PixelGameEngine *pge;
             bool bInit = false;
 
         public:
-            void initialize(olc::PixelGameEngine *eng, ExtraClass *extra);
+            void initialize(olc::PixelGameEngine *eng, ExtraClass extra);
 
             int run(float *felapsedTime);
 

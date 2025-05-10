@@ -7,7 +7,7 @@ namespace crbn
     {
 
         template <class ScreenClass, class ExtraClass>
-        void Screens_ExtraClass<ScreenClass, ExtraClass>::initialize(olc::PixelGameEngine *eng, ExtraClass *extra)
+        void Screens_ExtraClass<ScreenClass, ExtraClass>::initialize(olc::PixelGameEngine * eng, ExtraClass extra)
         {
             if (!bInit)
             {

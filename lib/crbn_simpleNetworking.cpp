@@ -40,7 +40,7 @@ namespace crbn
             crbn::log("crbn::simpleNetworkign::sendConfirmation BAD ERROR SOCKET CLOSED");
             return crbn::err::NO_SOCKET_CONNECTION;
         }
-        crbn::serialiser *net = new crbn::serialiser(crbn::op::SERVER_RECIEVED_REQUEST, ticket);
+        crbn::serialiser net(crbn::op::SERVER_RECIEVED_REQUEST, ticket);
         // crbn::log(" sendconfirmation ; bodysize, op, ticket  : ", false);
         // crbn::log(+net->bodySize(), false);
         // crbn::log(" ", false);
@@ -48,22 +48,10 @@ namespace crbn
         // crbn::log(" ", false);
         // crbn::log(+net->ticket());
 
-        socket->write_some(asio::buffer(net->rawDatOut(), net->size()), ec);
+        socket->write_some(asio::buffer(net.rawDatOut(), net.size()), ec);
         crbn::log(" sendConfirmation : confirmation Sent ");
         socket->close();
-
-        // #ifdef LOGGING
-        //
-        // auto func = [&]() -> char *
-        // {
-        // char *str = new char[net->size()];
-        // str = (char *)net->rawDatOut();
-        // return str;
-        // };
-        // crbn::log(func());
-        // #endif
-        if (socket != nullptr)
-            delete socket;
+        delete socket;
         return 1;
     }
 
@@ -90,12 +78,12 @@ namespace crbn
             if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start) > std::chrono::milliseconds(ms_networkTimeOut))
             // if no information has been recieved then ends connection
             {
-                crbn::log(" simpleNet : confrmation NOT recieved (timed out) ");
-                return crbn::err::NETWORK_TIMED_OUT;
+                break;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
+        bytes = socket->available();
         if (bytes >= serc::HEADER_SIZE_T)
         {
             socket->read_some(asio::buffer(headerArray, serc::HEADER_SIZE_T), ec);
@@ -108,19 +96,18 @@ namespace crbn
             if ((dat.bodySize() == (size_t)0) and (dat.operation() == crbn::op::SERVER_RECIEVED_REQUEST) and (dat.ticket() == ticket))
             {
                 crbn::log("crbn::simpleNetworking::recieveConfirmation() conmfirmation Recieved ! ");
+                delete[] headerArray;
                 return true;
             }
-            // else if (dat.bodySize() != 0)
-            // {
-            // }
             else
             {
+                delete[] headerArray;
                 return crbn::err::INCORRECT_DATA_SENT;
             }
         }
-
-        crbn::log(" simpleNet : confirmation NOT recieved (timed out) ");
-        return crbn::err::INCORRECT_DATA_SENT;
+        crbn::warn(" simpleNet : confirmation NOT recieved (timed out) ");
+        delete[] headerArray;
+        return crbn::err::NETWORK_TIMED_OUT;
     }
 
     
@@ -145,7 +132,7 @@ namespace crbn
             }
             crbn::log(" sendData : looping :p");
         }
-        return 1;
+        return true;
     }
 
     /// @brief sends raw data, array of bytes with size of size
@@ -166,19 +153,19 @@ namespace crbn
         }
         else
         {
-            crbn::log(ec);
+            crbn::log(ec.message());
             return crbn::err::NO_SOCKET_CONNECTION;
         }
 
         if (socket.is_open())
         {
-            crbn::log(" crbn::simpleNetworking::SENDdata:: BYTES WRITTEN = " +
+            crbn::log("crbn::simpleNetworking::SENDdata:: BYTES WRITTEN = " +
                       std::to_string(
                           socket.write_some(asio::buffer(dat->rawDatOut(), dat->size()), ec)));
 
             if (ec)
             {
-                crbn::log(ec);
+                crbn::log(ec.message());
                 return -1;
             }
             else
@@ -226,21 +213,21 @@ namespace crbn
         else
             svr = true;
 
-        asio::error_code ec;
+        static asio::error_code ec;
         // create a "context " essentially the platform specific interface
-        asio::io_context context;
+        static asio::io_context context;
 
-        asio::ip::tcp::acceptor *acceptor = nullptr;
-        asio::ip::tcp::socket *socket = nullptr;
+        static std::unique_ptr<asio::ip::tcp::acceptor> acceptor(nullptr);
+        static std::unique_ptr<asio::ip::tcp::socket  > socket  (nullptr);
+
         do
         {
-
             bool done = false;
             while (!done)
             {
                 try
                 {
-                    acceptor = new asio::ip::tcp::acceptor(context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), i_port));
+                    acceptor.reset(new asio::ip::tcp::acceptor(context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), i_port)));
                     done = true;
                 }
                 catch (std::exception &e)
@@ -250,7 +237,6 @@ namespace crbn
                     std::cerr << "\n"
                               << e.what() << " | port = " << i_port << "\n";
                 }
-
                 catch (...)
                 {
                     crbn::log("crbn::simpleNetworking::serverStart() caught error trying to generate acceptor");
@@ -262,8 +248,7 @@ namespace crbn
             {
                 try
                 {
-
-                    socket = new asio::ip::tcp::socket(context);
+                    socket.reset(new asio::ip::tcp::socket(context));
                     done = true;
                 }
                 catch (std::exception &e)
@@ -296,28 +281,22 @@ namespace crbn
                     crbn::log("crbn::simpleNetworking::serverStart() caught error trying to accpe socket");
                 }
             }
+            
+            acceptor->close(ec);
 
             crbn::log(" simpleNet : serverStart : connection accepted ");
 
-            // save client ip to config file
-
+            //                              save client ip to config file
             asio::ip::tcp::endpoint enp;
             enp = socket->remote_endpoint(ec);
             std::string tempip = enp.address().to_string(ec);
-            std::cout << "                  CLIENT IP ADDRESS == " << tempip << std::endl;
+            crbn::log ( "                  CLIENT IP ADDRESS == " + tempip );
 
             crbn::jsn::Json_Helper j;
-
             j.init(crbn::jsn::configFileName, crbn::jsn::jsonLiterals::config);
             j.lock();
-            // json j = crbn::jsn::jsonConfigRead(crbn::jsn::configFileName);
             j.json_write(crbn::jsn::keys::client_ip, tempip);
-            // j["client_ip"] = tempip;
             j.unlock();
-            // std::ofstream file(jsn::configFileName);
-            // file << std::setw(4) << j;
-            // file.close();
-            // done
 
             size_t bytes = socket->available(); // chech how many bytes are available to be read from the scoket
 
@@ -398,31 +377,17 @@ namespace crbn
 
                 if (b_sendConfirmation)
                 {
-
-                    if (acceptor != nullptr)
-                        delete acceptor;
                     crbn::log(" SERVER COMPLETEd ACTIONS ");
-
-                    return sendConfirmation(socket, +dat->ticket());
+                    return sendConfirmation(socket.release(), dat->ticket());
                 }
                 else
                 {
-                    if (acceptor != nullptr)
-                        delete acceptor;
-
-                    if (socket != nullptr)
-                    {
-                        socket->close();
-                        delete socket;
-                    }
-                    // return true;
+                    socket->close();
                 }
             }
             else
             {
-                socket->close();
-                delete socket;
-                delete acceptor;
+                socket->close(ec);
                 crbn::log("crbn::simpleNetworking::serverStart | reading header failed , not enough bytes to read +/ timed out");
                 return crbn::err::NETWORK_TIMED_OUT;
             }
@@ -432,11 +397,6 @@ namespace crbn
         {
             socket->close();
         }
-
-        if (socket != nullptr)
-            delete socket;
-        if (acceptor != nullptr)
-            delete acceptor;
 
         crbn::log(" SERVER COMPLETEd ACTIONS ");
         return true;

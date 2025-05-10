@@ -13,9 +13,8 @@
 
 #include "crbn_logging.hpp"
 
-class headerClass
+struct headerClass
 {
-public:
     // specifies what to do with the data sent
     uint16_t operation = +0;
     // how big is the body
@@ -24,9 +23,8 @@ public:
     uint32_t ticket = +0;
 };
 
-class bodyClass
-{
-public:
+struct bodyClass
+{           // change to char?
     std::vector<uint8_t> rawData;
 };
 
@@ -35,10 +33,14 @@ namespace crbn
     /// @brief used to store namespace constants
     namespace serc
     {
-        const size_t OPERATION_SIZE_T = 2;
-        const size_t BODYSIZE_T = 8;
-        const size_t TICKET_SIZE_T = 4;
-        const size_t HEADER_SIZE_T = OPERATION_SIZE_T + BODYSIZE_T + TICKET_SIZE_T;
+        typedef decltype(headerClass::operation) OPERATION_TYPE;
+        typedef decltype(headerClass::ticket) TICKET_TYPE;
+        typedef decltype(headerClass::bodysize) BODYSIZE_TYPE;
+        
+        const size_t OPERATION_SIZE_T = sizeof(headerClass::operation);
+        const size_t BODYSIZE_T = sizeof(headerClass::bodysize);
+        const size_t TICKET_SIZE_T = sizeof(headerClass::ticket);
+        const size_t HEADER_SIZE_T = TICKET_SIZE_T + BODYSIZE_T + OPERATION_SIZE_T;
     }
 
     class serialiser
@@ -54,6 +56,20 @@ namespace crbn
         headerClass header;
 
     public:
+        /// @brief calls initialise() with data provided
+        serialiser();
+
+        /// @brief deletor
+        ~serialiser();
+        
+        /// @brief copy constructor 
+        /// @param  
+        serialiser(const serialiser &);
+
+        /// @brief move constructor
+        /// @param
+        serialiser(serialiser &&);
+
         /// @brief calls rawHeaderIn();
         /// @param rawInput
         /// @param readBody t: reads header + body | f: doesnt read body, just reads header
@@ -64,26 +80,23 @@ namespace crbn
         void rawHeaderIn(uint8_t *rawInput, bool readBody);
 
         /// @brief calls initialise() with data provided
-        serialiser();
-
-        /// @brief calls initialise() with data provided
-        serialiser(uint16_t op, uint32_t ticket);
+        serialiser(serc::OPERATION_TYPE op, serc::TICKET_TYPE ticket);
 
         /// @brief calls initialise() with data provided
         serialiser(uint8_t *bodyInp, size_t size);
 
         /// @brief calls initialise() with data provided
-        serialiser(uint8_t *bodyInp, size_t size, uint16_t op);
+        serialiser(uint8_t *bodyInp, size_t size, serc::OPERATION_TYPE op);
 
         /// @brief calls initialise() with data provided
-        serialiser(uint8_t *bodyInp, size_t size, uint16_t operation, uint32_t ticket);
+        serialiser(uint8_t *bodyInp, size_t size, serc::OPERATION_TYPE operation, serc::TICKET_TYPE ticket);
 
         /// @brief sets up class with data
         /// @param bodyInp raw data
         /// @param size size in bytes of raw data
         /// @param operation crbn::op enum
         /// @param ticket unique identifier to be used to identify each client request
-        void initialise(uint8_t *bodyInp, size_t size, uint16_t operation, uint32_t ticket);
+        void initialise(uint8_t *bodyInp, size_t size, serc::OPERATION_TYPE operation, serc::TICKET_TYPE ticket);
 
         /// @brief appends (size) number of bytes to the end of the body
         /// @param bodyInp raw data (not serialized data)
@@ -102,9 +115,9 @@ namespace crbn
         /// @brief serializes data into raw array pointer
         /// @return returns pointer to uint8_t array
         uint8_t *rawDatOut();
-        
+
         /// @brief returns size of raw data, header.bodysize + header size
-        /// @return 
+        /// @return
         size_t size();
 
         /// @brief returns size of body
@@ -117,12 +130,12 @@ namespace crbn
         uint8_t bodyAccsess(const int element);
 
         /// @brief returns the stored operation
-        /// @return 
-        uint16_t operation();
-        
+        /// @return
+        serc::OPERATION_TYPE operation();
+
         /// @brief returns the stored ticket
-        /// @return 
-        uint32_t ticket();
+        /// @return
+        serc::TICKET_TYPE ticket();
 
         /// @brief returns pointer to c style array of the body
         /// @return
@@ -130,8 +143,7 @@ namespace crbn
 
         /// @brief creates a std string and assigns body data to it
         std::string bodyAsString();
-        
     };
-}
+};
 
 #endif

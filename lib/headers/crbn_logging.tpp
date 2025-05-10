@@ -17,7 +17,7 @@ namespace crbn
     //     std::scoped_lock<std::mutex> lock(m_logging);
     //     std::cout << str << std::endl;
     // }
-    
+
     template <typename T>
     void log(const T &str, bool endl)
     {
@@ -41,21 +41,43 @@ namespace crbn
 
 #else
 
-
 namespace crbn
 {
     // void log(const char *str)
     // {
     // }
     template <typename T>
-    void log(const T &, bool )
+    void log(const T &, bool)
     {
     }
     template <typename T>
     void log(const T &)
     {
     }
-}
-
-
+};
 #endif
+
+namespace crbn
+{
+    // namespace
+    // {
+    //     void warn();
+    // }
+    namespace
+    {
+        inline void warn()
+        {
+            std::cout << "\033[0m" << std::endl;
+            m_logging.unlock();
+        };
+    }
+
+    template <typename T, typename... RecursiveVals>
+    void warn(const T& str, RecursiveVals... Rv)
+    {
+        m_logging.lock();
+        std::cout << "\x1b[1;31m" << str;
+        warn(Rv...);
+    }
+
+}
